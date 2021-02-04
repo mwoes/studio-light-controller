@@ -1,0 +1,23 @@
+version: '2.1'
+volumes:
+  node-data: {}
+services:
+  wpe:
+    restart: always
+    build: ./wpe
+    privileged: true
+    ports:
+      - 8080:8080
+    environment:
+      WPE_URL: 'http://10.0.0.183:1880/ui/#!/11'
+  node-red:
+    build:
+      context: ./node-red
+    volumes:
+      - 'node-data:/data'
+    restart: always
+    environment:
+      USERNAME: 'harbor'
+    privileged: true
+    ports:
+      - '80:80'
