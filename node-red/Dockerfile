@@ -1,7 +1,7 @@
 ###
 # Build step
 ###
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-node:12-stretch-build as build
+FROM balenalib/raspberrypi3-debian-node:12-stretch-build as build
 
 RUN JOBS=MAX npm install -g --production --unsafe-perm \
        node-red \
@@ -12,7 +12,7 @@ RUN JOBS=MAX npm install -g --production --unsafe-perm \
 ###
 # Runtime image
 ###
-FROM balenalib/%%BALENA_MACHINE_NAME%%-debian-node:12-stretch-run
+FROM balenalib/raspberrypi3-debian-node:12-stretch-run
 
 RUN apt-get update && apt-get install -yq --no-install-recommends \
   rpi.gpio \
