@@ -1,6 +1,7 @@
 version: '2.1'
 volumes:
   node-data: {}
+  node-red: {}
 services:
   wpe:
     restart: always
@@ -9,12 +10,13 @@ services:
     ports:
       - 8080:8080
     environment:
-      WPE_URL: 'http://10.0.0.183:1880/ui/#!/11'
+      WPE_URL: 'http://10.0.0.183/files/HARBOR/studioController.html'
   node-red:
     build:
       context: ./node-red
     volumes:
       - 'node-data:/data'
+      - 'node-red:/usr/src/app'
     restart: always
     environment:
       USERNAME: 'harbor'

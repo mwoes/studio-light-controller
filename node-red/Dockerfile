@@ -7,7 +7,6 @@ RUN JOBS=MAX npm install -g --production --unsafe-perm \
        node-red \
        node-red-admin \
        node-red-contrib-balena \
-       bcryptjs
 
 ###
 # Runtime image
@@ -30,6 +29,8 @@ COPY --from=build /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 # This will copy all files in our root to the working  directory in the container
 COPY ./app ./
+
+RUN npm install bcryptjs
 
 # server.js will run when container starts up on the device
 CMD ["bash", "/usr/src/app/start.sh"]
