@@ -6,7 +6,8 @@ FROM balenalib/raspberrypi3-debian-node:12-stretch-build as build
 RUN JOBS=MAX npm install -g --production --unsafe-perm \
        node-red \
        node-red-admin \
-       node-red-contrib-balena
+       node-red-dashboard \
+       node-red-node-serialport
 
 ###
 # Runtime image

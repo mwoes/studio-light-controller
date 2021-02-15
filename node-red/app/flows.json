@@ -1,0 +1,632 @@
+[
+    {
+        "id": "3295b9b3.536026",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "7d997072.9cd1",
+        "type": "ui_tab",
+        "name": "StudioControl",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "49f3bf9a.e77ce",
+        "type": "ui_group",
+        "name": "Zone Control",
+        "tab": "7d997072.9cd1",
+        "order": 1,
+        "disp": true,
+        "width": "11",
+        "collapse": false
+    },
+    {
+        "id": "91a088e1.a736a8",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-dark",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#73a1c4",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#097479",
+                    "value": "#73a1c4",
+                    "edited": true
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#73a1c4",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#a9c5db",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#555555",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#333333",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#eeeeee",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#73a1c4",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#333333",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey"
+            }
+        },
+        "site": {
+            "name": "Studio Light Controller",
+            "hideToolbar": "true",
+            "allowSwipe": "true",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "6f6f8aa.10c8a74",
+        "type": "ui_group",
+        "name": "Scenes",
+        "tab": "7d997072.9cd1",
+        "order": 3,
+        "disp": true,
+        "width": "11",
+        "collapse": false
+    },
+    {
+        "id": "26e1dbbb.a9ff24",
+        "type": "serial-port",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "115200",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "\\r\\n",
+        "responsetimeout": "10000"
+    },
+    {
+        "id": "60e93296.073ecc",
+        "type": "ui_tab",
+        "name": "Zones",
+        "icon": "dashboard",
+        "order": 2,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "1637dd95.226352",
+        "type": "ui_group",
+        "name": "Master Groups",
+        "tab": "7d997072.9cd1",
+        "order": 2,
+        "disp": true,
+        "width": "11",
+        "collapse": false
+    },
+    {
+        "id": "99de9c17.6babc",
+        "type": "inject",
+        "z": "3295b9b3.536026",
+        "name": "Status",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "0.5",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "status",
+        "payloadType": "str",
+        "x": 205,
+        "y": 439,
+        "wires": [
+            [
+                "695eb3c.3060a4c"
+            ]
+        ]
+    },
+    {
+        "id": "871449f1.a40ce8",
+        "type": "function",
+        "z": "3295b9b3.536026",
+        "name": "setup commands",
+        "func": "if(msg.topic == \"w\" || msg.topic == \"c\") {\n    msg.payload = \"/bankSet?params=\"+ msg.topic + \":\" + msg.payload;\n    node.send([[msg],[null]]);\n} else if(msg.topic == \"sys\") {\n    msg.payload = \"/\" + msg.payload;\n    node.send([[null],[msg]]);\n} else if(msg.topic == \"scene\") {\n    if(msg.payload == \"3500K\") {\n        msg.payload = \"/bankSet?params=w:255\";\n        node.send([[null],[msg]]);\n        msg.payload = \"/bankSet?params=c:0\";\n        node.send([[null],[msg]]);\n    } else if(msg.payload == \"6500K\") {\n        msg.payload = \"/bankSet?params=c:255\";\n        node.send([[null],[msg]]);\n        msg.payload = \"/bankSet?params=w:0\";\n        node.send([[null],[msg]]);\n    }\n}\n\nflow.set('command',true);\n\nvar timeout = setTimeout(function() {\n    flow.set('command',false);\n},3000)",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1760,
+        "y": 440,
+        "wires": [
+            [
+                "f96273b7.ba9cd",
+                "a60a5299.11ae1"
+            ],
+            [
+                "ca26cdce.b7833"
+            ]
+        ],
+        "outputLabels": [
+            "rate-limited with drops",
+            "queued messages"
+        ]
+    },
+    {
+        "id": "695eb3c.3060a4c",
+        "type": "function",
+        "z": "3295b9b3.536026",
+        "name": "status constructor",
+        "func": "msg.payload = \"/\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 430,
+        "y": 440,
+        "wires": [
+            [
+                "7f9f10cd.1bc3c"
+            ]
+        ]
+    },
+    {
+        "id": "9d47e4db.f50fc8",
+        "type": "function",
+        "z": "3295b9b3.536026",
+        "name": "average output and update masters",
+        "func": "var value = JSON.parse(msg.payload);\nif(!value.return_value && value.ip != \"NO LINK\") {\n    var cAvg = 0;\n    var wAvg = 0;\n    var avg = 0;\n    var coolArray, warmArray, temp;\n    \n    flow.set('ip',value.variables.ip);\n    \n    coolArray = JSON.parse(value.variables.coolBank);\n    flow.set('cool',coolArray);\n    for(var i=0; i<coolArray.length; i++) {\n        cAvg += coolArray[i];\n    }\n    cAvg = cAvg / coolArray.length+1;\n    msg.payload = cAvg;\n    if(cAvg == 1) { cAvg = 0; }\n    msg.topic = \"cool\";\n    msg.cool = Number.parseInt(map(cAvg, 0, 255, 0, 100), 0) + \"%\";\n    flow.set('coolAvg',cAvg);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n    \n    warmArray = JSON.parse(value.variables.warmBank);\n    flow.set('warm',warmArray);\n    for(var j=0; j<warmArray.length; j++) {\n        wAvg += warmArray[j];\n    }\n    wAvg = wAvg / warmArray.length+1;\n    msg.payload = wAvg;\n    if(wAvg == 1) { wAvg = 0; }\n    msg.topic = \"warm\";\n    msg.warm = Number.parseInt(map(wAvg, 0, 255, 0, 100), 0) + \"%\";\n    flow.set('warmAvg',wAvg);\n    \n    if(wAvg > cAvg) {\n        temp = (cAvg / wAvg) * 100;\n        temp = map(temp, 0, 100, 3500, 5000)\n    } else if(cAvg > wAvg) {\n        temp = (wAvg / cAvg) * 100;\n        temp = map(temp, 0, 100, 6500, 5000);\n    } else if(cAvg == 0 && wAvg == 0) {\n        temp = 0;\n    } else if(cAvg == wAvg) {\n        temp = 5000;\n    }\n    temp = Number.parseInt(temp, 0);\n    if(flow.get('temp') !== temp) { \n        flow.set('temp',temp);\n        msg.temp = temp;\n        node.send([[msg],[null]]);\n    }\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n}\n\nfunction map(value, in_min, in_max, out_min, out_max) {\n  return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;\n}",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1060,
+        "y": 480,
+        "wires": [
+            [
+                "7668a061.9bf5",
+                "d31561bd.05a93",
+                "803af619.5036d8",
+                "10bcd2f6.81068d"
+            ],
+            [
+                "70f83a33.9dd6d4"
+            ]
+        ],
+        "outputLabels": [
+            "temp",
+            "strips"
+        ]
+    },
+    {
+        "id": "70f83a33.9dd6d4",
+        "type": "switch",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "warm",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cool",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1308.7500190734863,
+        "y": 487.5000066757202,
+        "wires": [
+            [
+                "98c55271.085d8"
+            ],
+            [
+                "fc8b27b8.a68378"
+            ]
+        ]
+    },
+    {
+        "id": "f96273b7.ba9cd",
+        "type": "debug",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 1990,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "7668a061.9bf5",
+        "type": "debug",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1300,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "98c55271.085d8",
+        "type": "ui_slider",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "label": "Master Warm",
+        "tooltip": "",
+        "group": "1637dd95.226352",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "all",
+        "topic": "w",
+        "min": 0,
+        "max": "255",
+        "step": 1,
+        "x": 1510,
+        "y": 400,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "fc8b27b8.a68378",
+        "type": "ui_slider",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "label": "Master Cool",
+        "tooltip": "",
+        "group": "1637dd95.226352",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "outs": "all",
+        "topic": "c",
+        "min": 0,
+        "max": "255",
+        "step": 1,
+        "x": 1510,
+        "y": 460,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "48f470ab.4286c",
+        "type": "ui_button",
+        "z": "3295b9b3.536026",
+        "name": "allOn",
+        "group": "6f6f8aa.10c8a74",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "All On",
+        "tooltip": "",
+        "color": "#FFF",
+        "bgcolor": "#0000FF",
+        "icon": "",
+        "payload": "allOn",
+        "payloadType": "str",
+        "topic": "sys",
+        "x": 1514.0001220703125,
+        "y": 505.33331298828125,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "3539349e.005cac",
+        "type": "ui_button",
+        "z": "3295b9b3.536026",
+        "name": "allOff",
+        "group": "6f6f8aa.10c8a74",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "All Off",
+        "tooltip": "",
+        "color": "#FFF",
+        "bgcolor": "#FF0000",
+        "icon": "",
+        "payload": "allOff",
+        "payloadType": "str",
+        "topic": "sys",
+        "x": 1509.9998779296875,
+        "y": 552.6666259765625,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "7f9f10cd.1bc3c",
+        "type": "serial request",
+        "z": "3295b9b3.536026",
+        "name": "studioLightController",
+        "serial": "26e1dbbb.a9ff24",
+        "x": 709.3333129882812,
+        "y": 448.22222900390625,
+        "wires": [
+            [
+                "9d47e4db.f50fc8",
+                "1cf9c2d2.6dbd0d"
+            ]
+        ]
+    },
+    {
+        "id": "c87dcfda.33d47",
+        "type": "serial out",
+        "z": "3295b9b3.536026",
+        "name": "OUT",
+        "serial": "26e1dbbb.a9ff24",
+        "x": 2185,
+        "y": 435,
+        "wires": []
+    },
+    {
+        "id": "1cf9c2d2.6dbd0d",
+        "type": "debug",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 995.6250152587891,
+        "y": 520.0000076293945,
+        "wires": []
+    },
+    {
+        "id": "d31561bd.05a93",
+        "type": "ui_text",
+        "z": "3295b9b3.536026",
+        "group": "49f3bf9a.e77ce",
+        "order": 1,
+        "width": "5",
+        "height": "1",
+        "name": "",
+        "label": "Cool Output",
+        "format": "{{msg.cool}}",
+        "layout": "row-spread",
+        "x": 1328.7500190734863,
+        "y": 331.2500057220459,
+        "wires": []
+    },
+    {
+        "id": "803af619.5036d8",
+        "type": "ui_gauge",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "group": "49f3bf9a.e77ce",
+        "order": 2,
+        "width": "11",
+        "height": "4",
+        "gtype": "gage",
+        "title": "Color Temp",
+        "label": "K",
+        "format": "{{msg.temp}}",
+        "min": "0",
+        "max": "10000",
+        "colors": [
+            "#ff6f00",
+            "#f5fdff",
+            "#0059ff"
+        ],
+        "seg1": "4000",
+        "seg2": "6000",
+        "x": 1329.3750228881836,
+        "y": 290.0000047683716,
+        "wires": []
+    },
+    {
+        "id": "10bcd2f6.81068d",
+        "type": "ui_text",
+        "z": "3295b9b3.536026",
+        "group": "49f3bf9a.e77ce",
+        "order": 1,
+        "width": "6",
+        "height": "1",
+        "name": "",
+        "label": "Warm Output",
+        "format": "{{msg.warm}}",
+        "layout": "row-spread",
+        "x": 1328.75,
+        "y": 368.75,
+        "wires": []
+    },
+    {
+        "id": "a60a5299.11ae1",
+        "type": "delay",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "20",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 2000,
+        "y": 450,
+        "wires": [
+            [
+                "c87dcfda.33d47"
+            ]
+        ]
+    },
+    {
+        "id": "580670bc.5db0b",
+        "type": "ui_button",
+        "z": "3295b9b3.536026",
+        "name": "3500K 100%",
+        "group": "6f6f8aa.10c8a74",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "3500K 100%",
+        "tooltip": "",
+        "color": "#FFF",
+        "bgcolor": "#FF6F00",
+        "icon": "",
+        "payload": "3500K",
+        "payloadType": "str",
+        "topic": "scene",
+        "x": 1495,
+        "y": 600,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "48d29016.83cd3",
+        "type": "ui_button",
+        "z": "3295b9b3.536026",
+        "name": "6500K 100%",
+        "group": "6f6f8aa.10c8a74",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "6500K 100%",
+        "tooltip": "",
+        "color": "#FFF",
+        "bgcolor": "#0059FF",
+        "icon": "",
+        "payload": "6500K",
+        "payloadType": "str",
+        "topic": "scene",
+        "x": 1500,
+        "y": 645,
+        "wires": [
+            [
+                "871449f1.a40ce8"
+            ]
+        ]
+    },
+    {
+        "id": "ca26cdce.b7833",
+        "type": "delay",
+        "z": "3295b9b3.536026",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 1990,
+        "y": 490,
+        "wires": [
+            [
+                "c87dcfda.33d47"
+            ]
+        ]
+    }
+]
