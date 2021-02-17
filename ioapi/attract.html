@@ -1,0 +1,54 @@
+<html>
+    <head>
+    </head>
+    <style>
+        body {
+          overflow: hidden;
+          background-color: #000;
+          opacity: 50%;
+        }
+
+        #tv {
+            position: absolute;
+            top: 187px;
+            left: -42%;
+            color: #000;
+            overflow: none;
+            height: 65vh;
+            transform: rotate(90deg);
+            opacity: 50%;
+        }
+        img {
+            position: absolute;
+            top: 36%;
+            left: 25%;
+            width: 50vw;
+            z-index: 5000;
+        }
+        h1 {
+            position: absolute;
+            top: 500px;
+            left: 20%;
+            z-index: 5000;
+            color: #FFF;
+            font-family: sans-serif;
+        }
+        h3 {
+            position: absolute;
+            top: 600px;
+            left: 36%;
+            z-index: 5000;
+            color: #FFF;
+            font-family: sans-serif;
+        }
+    </style>
+
+    <body>
+        <h1>Photo Studio Controller</h1>
+        <h3>TOUCH TO BEGIN</h3>
+        <img src="resin-logo.png">
+        <video id="tv" autoplay muted loop>
+          <source src="attract.mp4" type="video/mp4">
+        </video>
+    </body>
+</html>
