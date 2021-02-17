@@ -1,25 +1,50 @@
 version: '2.1'
 volumes:
-  node-data: {}
-  node-red: {}
+  ioapi-static-data: {}
 services:
-  wpe:
-    restart: always
-    build: ./wpe
+  electronjs:
+    image: 'harborretail/electron:production'
+    container_name: electron
     privileged: true
-    ports:
-      - 8080:8080
+    pid: host
+    labels:
+      io.balena.features.kernel-modules: '1'
+      io.balena.features.firmware: '1'
+      io.balena.features.dbus: '1'
+    restart: always
     environment:
-      WPE_URL: 'http://10.0.0.183/files/HARBOR/studioController.html'
-  node-red:
+      DISPLAY_ROTATE: 'xrandr --output DSI1 --off --output HDMI2 --rotate right'
+      XINPUT_VALS: 'xinput -set-prop 11 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1'
+      ELECTRON_ENABLE_HW_ACCELERATION: '0'
+      ELECTRON_DISABLE_SECURITY_WARNINGS: '1'
+      ELECTRON_MULTI_DISPLAY: '1'
+      ELECTRON_REMOTE_DEBUGGING: '1'
+      ELECTRON_REMOTE_DEBUG_PORT: '9222'
+      ELECTRON_ATTRACT_LOOP: '0'
+      ELECTRON_WANTEST: '0'
+      URL_LAUNCHER_HEARTBEAT: '1'
+      URL_LAUNCHER_URL: 'http://ioapi:1880/node/ui/'
+      URL_LAUNCHER_WIDTH: '600'
+      URL_LAUNCHER_HEIGHT: '1024'
+      URL_LAUNCHER_FORCE_OVERFLOW: '1'
+      URL_LAUNCHER_FORCE_KILL_MODULES: '0'
+  nginx:
     build:
-      context: ./node-red
-    volumes:
-      - 'node-data:/data'
-      - 'node-red:/usr/src/app'
-    restart: always
-    environment:
-      USERNAME: 'harbor'
-    privileged: true
+      context: ./nginx
+    container_name: nginx
+    depends_on:
+      - ioapi
     ports:
       - '80:80'
+    restart: always
+  ioapi:
+    build:
+      context: ./ioapi
+    container_name: ioapi
+    volumes:
+      - 'ioapi-static-data:/data'
+    privileged: true
+    expose:
+      - '3001'
+      - '1880'
+    restart: always

@@ -41,8 +41,8 @@ String systemStatus = sysStatus.as<String>();
 enum PinAssignments {
 encoderPinA_W = 19,
 encoderPinB_W = 18,
-encoderPinA_C = 2,
-encoderPinB_C = 3,
+encoderPinA_C = 3,
+encoderPinB_C = 2,
 systemOffLED = 5,
 systemOffBTN = 8,
 systemOnLED = 11,
@@ -94,10 +94,10 @@ void setup() {
   attachInterrupt(5, doEncoderA_W, CHANGE);
   // encoder pin on interrupt 4 (pin 18)
   attachInterrupt(4, doEncoderB_W, CHANGE);
-  // encoder pin on interrupt 0 (pin 2)
-  attachInterrupt(1, doEncoderA_C, CHANGE);
-  // encoder pin on interrupt 1 (pin 3)
-  attachInterrupt(0, doEncoderB_C, CHANGE);
+  // encoder pin on interrupt 0 (pin 3)
+  attachInterrupt(0, doEncoderA_C, CHANGE);
+  // encoder pin on interrupt 1 (pin 2)
+  attachInterrupt(1, doEncoderB_C, CHANGE);
 
   Serial.begin(115200);
   Wire.begin();
@@ -184,6 +184,7 @@ void loop() {
   cool.getChannelPWM(0);
   checkNetwork();
   readBtns();
+  checkStatus();
 }
 
 int allOff() {
@@ -250,8 +251,6 @@ int allOn() {
 }
 
 int bankSet(String command) {
-  int offCheck = 0;
-
   String ch = getValue(command,':',0);
   String val = getValue(command,':',1);
   int valInt = val.toInt();
@@ -259,12 +258,8 @@ int bankSet(String command) {
   if(ch == "w") {
     if(valInt > 0) {
       digitalWrite(MW, HIGH);
-    } else {
-      digitalWrite(MW, LOW);
     }
     for(int i=0; i<14; i++) {
-      int coolCheck = coolLaneState[i];
-      offCheck = offCheck + valInt + coolCheck;
       int y = invert(valInt);
       warm.setChannelPWM(i, y << 4);
       warmLaneState[i] = valInt;
@@ -273,12 +268,8 @@ int bankSet(String command) {
   } else if(ch == "c") {
     if(valInt > 0) {
       digitalWrite(MC, HIGH);
-    } else {
-      digitalWrite(MC, LOW);
     }
     for(int j=0; j<14; j++) {
-      int warmCheck = warmLaneState[j];
-      offCheck = offCheck + valInt + warmCheck;
       int x = invert(valInt);
       cool.setChannelPWM(j, x << 4);
       coolLaneState[j] = valInt;
@@ -288,66 +279,38 @@ int bankSet(String command) {
     return 0;
   }
 
-  if(offCheck > 0) {
-    sysStatus["status"] = "lightsOn";
-  } else {
-    sysStatus["status"] = "lightsOff";
-  }
-  
-  systemStatus = sysStatus["status"].as<String>();
-
   return 1;
 }
 
 int warmSet(String command) {
-  int offCheck = 0;
-
   for(int i=0; i<14; i++) {
     String val = getValue(command,':',i);
     int valInt = val.toInt();
-    int coolCheck = coolLaneState[i];
-    offCheck = offCheck + valInt + coolCheck;
+    if(valInt > 0) {
+      digitalWrite(MW, HIGH);
+    }
     int y = invert(valInt);
     warm.setChannelPWM(i, y << 4);
     warmLaneState[i] = valInt;
   }
-
-  if(offCheck > 0) {
-    digitalWrite(MW, HIGH);
-    sysStatus["status"] = "lightsOn";
-  } else {
-    digitalWrite(MW, LOW);
-    sysStatus["status"] = "lightsOff";
-  }
   
-  systemStatus = sysStatus["status"].as<String>();
   warmLightState = warmLaneState.as<String>();
 
   return 1;
 }
 
 int coolSet(String command) {
-  int offCheck = 0;
-
   for(int i=0; i<14; i++) {
     String val = getValue(command,':',i);
     int valInt = val.toInt();
-    int warmCheck = warmLaneState[i];
-    offCheck = offCheck + valInt + warmCheck;
+    if(valInt > 0) {
+      digitalWrite(MC, HIGH);
+    }
     int y = invert(valInt);
     cool.setChannelPWM(i, y << 4);
     coolLaneState[i] = valInt;
   }
 
-  if(offCheck > 0) {
-    digitalWrite(MC, HIGH);
-    sysStatus["status"] = "lightsOn";
-  } else {
-    digitalWrite(MC, LOW);
-    sysStatus["status"] = "lightsOff";
-  }
-
-  systemStatus = sysStatus["status"].as<String>();
   coolLightState = coolLaneState.as<String>();
 
   return 1;
@@ -378,16 +341,6 @@ int channel(String command) {
     coolLaneState[channel] = valInt;
     coolLightState = coolLaneState.as<String>();
   }
-
-  if(valInt > 0) {
-    sysStatus["status"] = "lightsOn";
-  } else {
-    digitalWrite(MW, LOW);
-    digitalWrite(MC, LOW);
-    sysStatus["status"] = "lightsOff";
-  }
-
-  systemStatus = sysStatus["status"].as<String>();
 
   return 1;
 }
@@ -484,8 +437,6 @@ int sceneSet(String command) {
       };
       if(test > 0) {
         digitalWrite(MW, HIGH);
-      } else {
-        digitalWrite(MW, LOW);
       }
       warmLightState = warmLaneState.as<String>();
       test = 0;
@@ -500,16 +451,9 @@ int sceneSet(String command) {
       };
       if(test > 0) {
         digitalWrite(MC, HIGH);
-      } else {
-        digitalWrite(MC, LOW);
       }
       coolLightState = coolLaneState.as<String>();
     }
-  
-    if(valInt > 0) {
-      sysStatus["status"] = "lightsOn";
-      systemStatus = sysStatus["status"].as<String>();
-    };
   
     return 1;
   } else {
@@ -549,9 +493,7 @@ void updatePCA(uint8_t value, bool adjust, int ch) {
       }
       if(ch == 0) {
         int checkInt = warmLaneState[i];
-        int coolCheck = coolLaneState[i];
-        offCheck = offCheck + laneInt + coolCheck;
-        if(checkInt > 0 && laneInt > 0) {
+        if(laneInt > 0) {
           digitalWrite(MW, HIGH);
         }
         if(laneInt != checkInt) {
@@ -561,9 +503,7 @@ void updatePCA(uint8_t value, bool adjust, int ch) {
         }
       } else if(ch == 1) {
         int checkInt = coolLaneState[i];
-        int warmCheck = warmLaneState[i];
-        offCheck = offCheck + laneInt + warmCheck;
-        if(checkInt > 0 && laneInt > 0) {
+        if(laneInt > 0) {
           digitalWrite(MC, HIGH);
         }
         if(laneInt != checkInt) {
@@ -573,16 +513,6 @@ void updatePCA(uint8_t value, bool adjust, int ch) {
         };
       };
     };
-
-    if(offCheck > 0) {
-      sysStatus["status"] = "lightsOn";
-    } else {
-      digitalWrite(MW, LOW);
-      digitalWrite(MC, LOW);
-      sysStatus["status"] = "lightsOff";
-    }
-
-    systemStatus = sysStatus["status"].as<String>();
     
     if(ch == 0) {
       warmLightState = warmLaneState.as<String>();
@@ -658,8 +588,6 @@ void readBtns() {
     analogWrite(systemOffLED, 255);
     analogWrite(systemOnLED, 0);
   } else if(systemStatus == "lightsOff") {
-    digitalWrite(MW, LOW);
-    digitalWrite(MC, LOW);
     analogWrite(systemOffLED, 0);
     analogWrite(systemOnLED, 255);
   }
@@ -668,4 +596,31 @@ void readBtns() {
 int invert(int value) {
   value = map(value, 0, 255, 255, 0);
   return value;
+}
+
+void checkStatus() {
+  int checkerW = 0;
+  int checkerC = 0;
+  for(int i=0; i<14; i++ ) {
+    int cw = warmLaneState[i];
+    checkerW += cw;
+  }
+  for(int i=0; i<14; i++) {
+    int cc = coolLaneState[i];
+    checkerC += cc;
+  }
+  if(checkerW > 0 || checkerC > 0) {
+    sysStatus["status"] = "lightsOn";
+    systemStatus = sysStatus["status"].as<String>();
+  }
+  if(checkerW == 0) {
+    digitalWrite(MW, LOW); 
+  };
+  if(checkerC == 0) {
+    digitalWrite(MC, LOW);
+  };
+  if((checkerW + checkerC) == 0) {
+    sysStatus["status"] = "lightsOff";
+    systemStatus = sysStatus["status"].as<String>();
+  }
 }
