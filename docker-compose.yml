@@ -14,7 +14,7 @@ services:
     restart: always
     environment:
       DISPLAY_ROTATE: 'xrandr --output DSI1 --off --output HDMI2 --rotate right'
-      XINPUT_VALS: 'xinput -set-prop 11 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1'
+      XINPUT_VALS: "xinput -set-prop 11 'Coordinate Transformation Matrix' 0 1 0 -1 0 1 0 0 1"
       ELECTRON_ENABLE_HW_ACCELERATION: '0'
       ELECTRON_DISABLE_SECURITY_WARNINGS: '1'
       ELECTRON_MULTI_DISPLAY: '1'
