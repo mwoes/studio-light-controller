@@ -321,7 +321,7 @@
         "type": "function",
         "z": "44f07df0.979ff4",
         "name": "average output and update masters",
-        "func": "var value = JSON.parse(msg.payload);\nvar avg = 0;\nvar cAvg = 0;\nvar wAvg = 0;\nvar coolArray, warmArray, temp;\n\nif(typeof value.coolBank != \"undefined\") {\n    coolArray = JSON.parse(value.coolBank);\n    flow.set('cool',coolArray);\n    for(var i=0; i<coolArray.length; i++) {\n        cAvg += coolArray[i];\n    }\n    cAvg = cAvg / coolArray.length+1;\n    msg.payload = cAvg;\n    if(cAvg == 1) { cAvg = 0; }\n    msg.topic = \"cool\";\n    flow.set('coolAvg',cAvg);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n}\n\nif(typeof value.warmBank != \"undefined\") {\n    warmArray = JSON.parse(value.warmBank);\n    flow.set('warm',warmArray);\n    for(var j=0; j<warmArray.length; j++) {\n        wAvg += warmArray[j];\n    }\n    wAvg = wAvg / warmArray.length+1;\n    msg.payload = wAvg;\n    if(wAvg == 1) { wAvg = 0; }\n    msg.topic = \"warm\";\n\n    flow.set('warmAvg',wAvg);\n}\n\nwAvg = flow.get('warmAvg');\nmsg.warm = Number.parseInt(map(wAvg, 0, 255, 0, 100), 0) + \"%\";\ncAvg = flow.get('coolAvg');\nmsg.cool = Number.parseInt(map(cAvg, 0, 255, 0, 100), 0) + \"%\";\n\n\nif(wAvg > cAvg) {\n    temp = (cAvg / wAvg) * 100;\n    temp = map(temp, 0, 100, 3500, 5000)\n} else if(cAvg > wAvg) {\n    temp = (wAvg / cAvg) * 100;\n    temp = map(temp, 0, 100, 6500, 5000);\n} else if(cAvg === 0 && wAvg === 0) {\n    temp = 0;\n} else if(cAvg == wAvg) {\n    temp = 5000;\n}\ntemp = Number.parseInt(temp, 0);\nflow.set('temp',temp);\nmsg.temp = temp;\nnode.send([[msg],[null]]);\nif(!flow.get('command')) { node.send([[null],[msg]]); }\n\nfunction map(value, in_min, in_max, out_min, out_max) {\n  return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;\n}",
+        "func": "var value = JSON.parse(msg.payload);\nvar avg = 0;\nvar cAvg = 0;\nvar wAvg = 0;\nvar coolArray, warmArray, temp;\n\nif(typeof value.coolBank != \"undefined\") {\n    coolArray = JSON.parse(value.coolBank);\n    flow.set('cool',coolArray);\n    for(var i=0; i<coolArray.length; i++) {\n        cAvg += coolArray[i];\n    }\n    cAvg = cAvg / coolArray.length+1;\n    msg.payload = cAvg;\n    if(cAvg == 1) { cAvg = 0; }\n    msg.topic = \"cool\";\n    flow.set('coolAvg',cAvg);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n}\n\nif(typeof value.warmBank != \"undefined\") {\n    warmArray = JSON.parse(value.warmBank);\n    flow.set('warm',warmArray);\n    for(var j=0; j<warmArray.length; j++) {\n        wAvg += warmArray[j];\n    }\n    wAvg = wAvg / warmArray.length+1;\n    msg.payload = wAvg;\n    if(wAvg == 1) { wAvg = 0; }\n    msg.topic = \"warm\";\n\n    flow.set('warmAvg',wAvg);\n}\n\nwAvg = flow.get('warmAvg');\nmsg.warm = Number.parseInt(map(wAvg, 0, 255, 0, 100), 0) + \"%\";\ncAvg = flow.get('coolAvg');\nmsg.cool = Number.parseInt(map(cAvg, 0, 255, 0, 100), 0) + \"%\";\n\n\nif(wAvg > cAvg) {\n    temp = (cAvg / wAvg) * 100;\n    temp = map(temp, 0, 100, 2700, 4600)\n} else if(cAvg > wAvg) {\n    temp = (wAvg / cAvg) * 100;\n    temp = map(temp, 0, 100, 6500, 4600);\n} else if(cAvg === 0 && wAvg === 0) {\n    temp = 0;\n} else if(cAvg == wAvg) {\n    temp = 4600;\n}\ntemp = Number.parseInt(temp, 0);\nflow.set('temp',temp);\nmsg.temp = temp;\nnode.send([[msg],[null]]);\nif(!flow.get('command')) { node.send([[null],[msg]]); }\n\nfunction map(value, in_min, in_max, out_min, out_max) {\n  return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;\n}",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
@@ -517,7 +517,7 @@
         "name": "studioLightController",
         "serial": "a1187e0f.c9179",
         "x": 740,
-        "y": 420,
+        "y": 440,
         "wires": [
             [
                 "4f4dde36.4ec09",
@@ -582,14 +582,14 @@
         "label": "K",
         "format": "{{msg.temp}}",
         "min": "0",
-        "max": "10000",
+        "max": "9200",
         "colors": [
             "#ff6f00",
             "#f5fdff",
             "#0059ff"
         ],
         "seg1": "4000",
-        "seg2": "6000",
+        "seg2": "5200",
         "x": 1329.3750228881836,
         "y": 290.0000047683716,
         "wires": []
@@ -637,13 +637,13 @@
         "id": "3e9db5bc.35789a",
         "type": "ui_button",
         "z": "44f07df0.979ff4",
-        "name": "3500K 100%",
+        "name": "2700K 100%",
         "group": "778e0e96.6a2c5",
         "order": 0,
         "width": "11",
         "height": "2",
         "passthru": false,
-        "label": "3500K 100%",
+        "label": "2700K 100%",
         "tooltip": "",
         "color": "#FFF",
         "bgcolor": "#FF6F00",
@@ -1104,7 +1104,7 @@
         "type": "function",
         "z": "44f07df0.979ff4",
         "name": "",
-        "func": "if(!flow.get('command')) {\n    var cool = flow.get('cool');\n    for(var i=0; i<cool.length; i++) {\n        msg.topic = i;\n        msg.payload = cool[i];\n        node.send([[msg],[null],[null]]);\n    }\n    var warm = flow.get('warm');\n    for(var j=0; j<warm.length; j++) {\n        msg.topic = j;\n        msg.payload = warm[j];\n        node.send([[null],[msg],[null]]);\n    }\n}\n\nif(flow.get('status') == \"lightsOff\") {\n    msg.payload = \"show\";\n    node.send([[null],[null],[msg]]);\n} else if( flow.get('status') == \"lightsOn\") {\n    msg.payload = \"hide\";\n    node.send([[null],[null],[msg]]);\n}",
+        "func": "var total = 0;\n\nif(!flow.get('command')) {\n    var cool = flow.get('cool');\n    for(var i=0; i<cool.length; i++) {\n        msg.topic = i;\n        msg.payload = cool[i];\n        total += cool[i];\n        node.send([[msg],[null],[null]]);\n    }\n    var warm = flow.get('warm');\n    for(var j=0; j<warm.length; j++) {\n        msg.topic = j;\n        msg.payload = warm[j];\n        total += warm[j];\n        node.send([[null],[msg],[null]]);\n    }\n    if(total === 0) {\n        msg.payload = \"show\";\n        node.send([[null],[null],[msg]]);\n    } else if(total > 0) {\n        msg.payload = \"hide\";\n        node.send([[null],[null],[msg]]);\n    }\n}",
         "outputs": 3,
         "noerr": 0,
         "initialize": "",
@@ -2561,14 +2561,14 @@
         "label": "K",
         "format": "{{msg.temp}}",
         "min": "0",
-        "max": "10000",
+        "max": "9200",
         "colors": [
             "#ff6f00",
             "#f5fdff",
             "#0059ff"
         ],
         "seg1": "4000",
-        "seg2": "6000",
+        "seg2": "5200",
         "x": 1330,
         "y": 240,
         "wires": []
@@ -2587,14 +2587,14 @@
         "label": "K",
         "format": "{{msg.temp}}",
         "min": "0",
-        "max": "10000",
+        "max": "9200",
         "colors": [
             "#ff6f00",
             "#f5fdff",
             "#0059ff"
         ],
         "seg1": "4000",
-        "seg2": "6000",
+        "seg2": "5200",
         "x": 1330,
         "y": 200,
         "wires": []
@@ -2606,7 +2606,7 @@
         "name": "",
         "serial": "a1187e0f.c9179",
         "x": 530,
-        "y": 760,
+        "y": 780,
         "wires": [
             [
                 "897f6f36.e36cc"
@@ -2670,7 +2670,7 @@
         "randomUnits": "seconds",
         "drop": false,
         "x": 530,
-        "y": 420,
+        "y": 400,
         "wires": [
             [
                 "f9d9e7a1.20faa8"
