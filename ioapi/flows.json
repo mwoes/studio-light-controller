@@ -151,7 +151,7 @@
         "bin": "false",
         "out": "char",
         "addchar": "\\r\\n",
-        "responsetimeout": "10000"
+        "responsetimeout": "5000"
     },
     {
         "id": "6c3aaf75.ed2e6",
@@ -251,7 +251,7 @@
         "id": "20004182.ce580e",
         "type": "inject",
         "z": "44f07df0.979ff4",
-        "name": "Status",
+        "name": "warm",
         "props": [
             {
                 "p": "payload"
@@ -259,13 +259,13 @@
         ],
         "repeat": "0.5",
         "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
+        "once": true,
+        "onceDelay": "10",
         "topic": "",
-        "payload": "status",
+        "payload": "warm",
         "payloadType": "str",
-        "x": 205,
-        "y": 439,
+        "x": 110,
+        "y": 400,
         "wires": [
             [
                 "65542ceb.a02034"
@@ -303,16 +303,16 @@
         "type": "function",
         "z": "44f07df0.979ff4",
         "name": "status constructor",
-        "func": "msg.payload = \"/\";\nreturn msg;",
+        "func": "if(msg.payload == \"warm\") {\n    msg.payload = \"/warmBank\";\n    return msg;\n}\n\nif(msg.payload == \"cool\") {\n    msg.payload = \"/coolBank\";\n    return msg;\n}",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
-        "x": 430,
-        "y": 440,
+        "x": 350,
+        "y": 420,
         "wires": [
             [
-                "f9d9e7a1.20faa8"
+                "fdb9f223.d1473"
             ]
         ]
     },
@@ -321,7 +321,7 @@
         "type": "function",
         "z": "44f07df0.979ff4",
         "name": "average output and update masters",
-        "func": "var value = JSON.parse(msg.payload);\nif(!value.return_value && value.ip != \"NO LINK\") {\n    var cAvg = 0;\n    var wAvg = 0;\n    var avg = 0;\n    var coolArray, warmArray, temp;\n    \n    flow.set('ip',value.variables.ip);\n    flow.set('status',value.variables.status);\n    \n    coolArray = JSON.parse(value.variables.coolBank);\n    flow.set('cool',coolArray);\n    for(var i=0; i<coolArray.length; i++) {\n        cAvg += coolArray[i];\n    }\n    cAvg = cAvg / coolArray.length+1;\n    msg.payload = cAvg;\n    if(cAvg == 1) { cAvg = 0; }\n    msg.topic = \"cool\";\n    msg.cool = Number.parseInt(map(cAvg, 0, 255, 0, 100), 0) + \"%\";\n    flow.set('coolAvg',cAvg);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n    \n    warmArray = JSON.parse(value.variables.warmBank);\n    flow.set('warm',warmArray);\n    for(var j=0; j<warmArray.length; j++) {\n        wAvg += warmArray[j];\n    }\n    wAvg = wAvg / warmArray.length+1;\n    msg.payload = wAvg;\n    if(wAvg == 1) { wAvg = 0; }\n    msg.topic = \"warm\";\n    msg.warm = Number.parseInt(map(wAvg, 0, 255, 0, 100), 0) + \"%\";\n    flow.set('warmAvg',wAvg);\n    \n    if(wAvg > cAvg) {\n        temp = (cAvg / wAvg) * 100;\n        temp = map(temp, 0, 100, 3500, 5000)\n    } else if(cAvg > wAvg) {\n        temp = (wAvg / cAvg) * 100;\n        temp = map(temp, 0, 100, 6500, 5000);\n    } else if(cAvg === 0 && wAvg === 0) {\n        temp = 0;\n    } else if(cAvg == wAvg) {\n        temp = 5000;\n    }\n    temp = Number.parseInt(temp, 0);\n    flow.set('temp',temp);\n    msg.temp = temp;\n    node.send([[msg],[null]]);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n}\n\nfunction map(value, in_min, in_max, out_min, out_max) {\n  return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;\n}",
+        "func": "var value = JSON.parse(msg.payload);\nvar avg = 0;\nvar cAvg = 0;\nvar wAvg = 0;\nvar coolArray, warmArray, temp;\n\nif(typeof value.coolBank != \"undefined\") {\n    coolArray = JSON.parse(value.coolBank);\n    flow.set('cool',coolArray);\n    for(var i=0; i<coolArray.length; i++) {\n        cAvg += coolArray[i];\n    }\n    cAvg = cAvg / coolArray.length+1;\n    msg.payload = cAvg;\n    if(cAvg == 1) { cAvg = 0; }\n    msg.topic = \"cool\";\n    flow.set('coolAvg',cAvg);\n    if(!flow.get('command')) { node.send([[null],[msg]]); }\n}\n\nif(typeof value.warmBank != \"undefined\") {\n    warmArray = JSON.parse(value.warmBank);\n    flow.set('warm',warmArray);\n    for(var j=0; j<warmArray.length; j++) {\n        wAvg += warmArray[j];\n    }\n    wAvg = wAvg / warmArray.length+1;\n    msg.payload = wAvg;\n    if(wAvg == 1) { wAvg = 0; }\n    msg.topic = \"warm\";\n\n    flow.set('warmAvg',wAvg);\n}\n\nwAvg = flow.get('warmAvg');\nmsg.warm = Number.parseInt(map(wAvg, 0, 255, 0, 100), 0) + \"%\";\ncAvg = flow.get('coolAvg');\nmsg.cool = Number.parseInt(map(cAvg, 0, 255, 0, 100), 0) + \"%\";\n\n\nif(wAvg > cAvg) {\n    temp = (cAvg / wAvg) * 100;\n    temp = map(temp, 0, 100, 3500, 5000)\n} else if(cAvg > wAvg) {\n    temp = (wAvg / cAvg) * 100;\n    temp = map(temp, 0, 100, 6500, 5000);\n} else if(cAvg === 0 && wAvg === 0) {\n    temp = 0;\n} else if(cAvg == wAvg) {\n    temp = 5000;\n}\ntemp = Number.parseInt(temp, 0);\nflow.set('temp',temp);\nmsg.temp = temp;\nnode.send([[msg],[null]]);\nif(!flow.get('command')) { node.send([[null],[msg]]); }\n\nfunction map(value, in_min, in_max, out_min, out_max) {\n  return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;\n}",
         "outputs": 2,
         "noerr": 0,
         "initialize": "",
@@ -516,8 +516,8 @@
         "z": "44f07df0.979ff4",
         "name": "studioLightController",
         "serial": "a1187e0f.c9179",
-        "x": 700,
-        "y": 440,
+        "x": 740,
+        "y": 420,
         "wires": [
             [
                 "4f4dde36.4ec09",
@@ -531,8 +531,8 @@
         "z": "44f07df0.979ff4",
         "name": "OUT",
         "serial": "a1187e0f.c9179",
-        "x": 2185,
-        "y": 435,
+        "x": 2190,
+        "y": 460,
         "wires": []
     },
     {
@@ -2598,5 +2598,83 @@
         "x": 1330,
         "y": 200,
         "wires": []
+    },
+    {
+        "id": "76c2784e.34dd48",
+        "type": "serial in",
+        "z": "44f07df0.979ff4",
+        "name": "",
+        "serial": "a1187e0f.c9179",
+        "x": 530,
+        "y": 760,
+        "wires": [
+            [
+                "897f6f36.e36cc"
+            ]
+        ]
+    },
+    {
+        "id": "897f6f36.e36cc",
+        "type": "debug",
+        "z": "44f07df0.979ff4",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "98b92ee5.62a77",
+        "type": "inject",
+        "z": "44f07df0.979ff4",
+        "name": "cool",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "0.5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "10",
+        "topic": "",
+        "payload": "cool",
+        "payloadType": "str",
+        "x": 110,
+        "y": 460,
+        "wires": [
+            [
+                "65542ceb.a02034"
+            ]
+        ]
+    },
+    {
+        "id": "fdb9f223.d1473",
+        "type": "delay",
+        "z": "44f07df0.979ff4",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "x": 530,
+        "y": 420,
+        "wires": [
+            [
+                "f9d9e7a1.20faa8"
+            ]
+        ]
     }
 ]
