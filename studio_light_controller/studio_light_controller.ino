@@ -15,6 +15,7 @@
 
 // SETUP NETWORK / SERVER
 byte mac[] = {0xD2, 0x8A, 0xA7, 0x3C, 0x0C, 0x67};
+byte ip[] = {10, 0, 0, 174};
 EthernetServer server(80);
 
 // CREATE AREST INSTANCE
@@ -24,40 +25,46 @@ aREST rest = aREST();
 PCA9685 warm(B000000);
 PCA9685 cool(B000001);
 
+// LIGHT STATE GLOBALS
+unsigned int temp = 0;
+int warmT = 0;
+int prevW = 0;
+int coolT = 0;
+int prevC = 0;
+
 // CREATE JSON STATE DOCS
-StaticJsonDocument <1024> warmLaneState;
-String warmLightState = warmLaneState.as<String>();
+StaticJsonDocument <512> warmLaneState;
+StaticJsonDocument <512> coolLaneState;
+StaticJsonDocument <1024> lightState;
+String tmpW = lightState["warm"].as<String>();
+String tmpC = lightState["cool"].as<String>();
+String allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
-StaticJsonDocument <1024> coolLaneState;
-String coolLightState = coolLaneState.as<String>();
-
-StaticJsonDocument <32> network;
-String IP = network.as<String>();
-
-StaticJsonDocument <32> sysStatus;
-String systemStatus = sysStatus.as<String>();
+// REPORT INTERVAL SETUP
+unsigned long previousMillis = 0;
+const long reportInterval = 500;
 
 // SETUP ENCODERS AND BUTTONS
 enum PinAssignments {
-encoderPinA_W = 19,
-encoderPinB_W = 18,
-encoderPinA_C = 3,
-encoderPinB_C = 2,
+encoderPinA_T = 19,
+encoderPinB_T = 18,
+encoderPinA_B = 3,
+encoderPinB_B = 2,
 systemOffLED = 5,
 systemOffBTN = 8,
 systemOnLED = 11,
 systemOnBTN = 13
 };
-volatile unsigned int encoderPos_W = 0;
-unsigned int lastReportedPos_W = 0;
-static boolean rotating_W = false;
-boolean A_set_W = false;
-boolean B_set_W = false;
-volatile unsigned int encoderPos_C = 0;
-unsigned int lastReportedPos_C = 0;
-static boolean rotating_C = false;
-boolean A_set_C = false;
-boolean B_set_C = false;
+volatile unsigned int encoderPos_T = 0;
+unsigned int lastReportedPos_T = 0;
+static boolean rotating_T = false;
+boolean A_set_T = false;
+boolean B_set_T = false;
+volatile unsigned int encoderPos_B = 0;
+unsigned int lastReportedPos_B = 0;
+static boolean rotating_B = false;
+boolean A_set_B = false;
+boolean B_set_B = false;
 
 void setup() {
   pinMode(SS, OUTPUT);
@@ -72,14 +79,14 @@ void setup() {
   digitalWrite(MW, LOW);
   digitalWrite(MC, LOW);
 
-  pinMode(encoderPinA_W, INPUT);
-  pinMode(encoderPinB_W, INPUT);
-  digitalWrite(encoderPinA_W, HIGH);
-  digitalWrite(encoderPinB_W, HIGH);
-  pinMode(encoderPinA_C, INPUT);
-  pinMode(encoderPinB_C, INPUT);
-  digitalWrite(encoderPinA_C, HIGH);
-  digitalWrite(encoderPinB_C, HIGH);
+  pinMode(encoderPinA_T, INPUT);
+  pinMode(encoderPinB_T, INPUT);
+  digitalWrite(encoderPinA_T, HIGH);
+  digitalWrite(encoderPinB_T, HIGH);
+  pinMode(encoderPinA_B, INPUT);
+  pinMode(encoderPinB_B, INPUT);
+  digitalWrite(encoderPinA_B, HIGH);
+  digitalWrite(encoderPinB_B, HIGH);
 
   pinMode(systemOffBTN, INPUT);
   pinMode(systemOnBTN, INPUT);
@@ -91,13 +98,13 @@ void setup() {
   analogWrite(systemOnLED, 255);
 
   // encoder pin on interrupt 5 (pin 19)
-  attachInterrupt(5, doEncoderA_W, CHANGE);
+  attachInterrupt(5, doEncoderA_T, CHANGE);
   // encoder pin on interrupt 4 (pin 18)
-  attachInterrupt(4, doEncoderB_W, CHANGE);
+  attachInterrupt(4, doEncoderB_T, CHANGE);
   // encoder pin on interrupt 0 (pin 3)
-  attachInterrupt(0, doEncoderA_C, CHANGE);
+  attachInterrupt(0, doEncoderA_B, CHANGE);
   // encoder pin on interrupt 1 (pin 2)
-  attachInterrupt(1, doEncoderB_C, CHANGE);
+  attachInterrupt(1, doEncoderB_B, CHANGE);
 
   Serial.begin(115200);
   Wire.begin();
@@ -127,10 +134,7 @@ void setup() {
   rest.function("ch", channel);
   rest.function("bankSet", bankSet);
   rest.function("scene", sceneSet);
-  rest.variable("warmBank", &warmLightState);
-  rest.variable("coolBank", &coolLightState);
-  rest.variable("ip", &IP);
-  rest.variable("status", &systemStatus);
+  rest.variable("lights", &allLightState);
 
 //  // Give name and ID to device (ID should be 6 characters long)
   rest.set_id("000001");
@@ -138,22 +142,7 @@ void setup() {
 
   Ethernet.setHostname("studioLightControl");
   
-  if (Ethernet.begin(mac) == 0) {
-    if(Ethernet.link() == 0) {
-      network["ip"] = "NO LINK";
-      IP = network["ip"].as<String>();
-      serializeJson(network, Serial);
-    } else {
-      network["ip"] = "NO DHCP";
-      IP = network["ip"].as<String>();
-      serializeJson(network, Serial);
-    };
-  } else {
-    // success, display your local IP address:
-    network["ip"] = DisplayAddress(Ethernet.localIP());
-    IP = network["ip"].as<String>();
-    serializeJson(network, Serial);
-  };
+  Ethernet.begin(mac, ip);
 
   for(int i=0; i<14; i++) {
     warmLaneState[i] = 0;
@@ -165,15 +154,17 @@ void setup() {
     cool.setChannelPWM(i, 255);
   };
 
-  warmLightState = warmLaneState.as<String>();
-  coolLightState = coolLaneState.as<String>();
+  lightState["warm"] = warmLaneState;
+  lightState["cool"] = coolLaneState;
+  lightState["temp"] = temp;
+
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
   // Start watchdog
   wdt_enable(WDTO_4S);
 
-  sysStatus["status"] = "lightsOff";
-  serializeJson(sysStatus, Serial);
-  systemStatus = sysStatus["status"].as<String>();
 }
 
 void loop() {
@@ -182,9 +173,9 @@ void loop() {
   wdt_reset();
   warm.getChannelPWM(0);
   cool.getChannelPWM(0);
-  checkNetwork();
   readBtns();
   checkStatus();
+  emitStatus();
 }
 
 int allOff() {
@@ -210,11 +201,12 @@ int allOff() {
   digitalWrite(MW, LOW);
   digitalWrite(MC, LOW);
 
-  warmLightState = warmLaneState.as<String>();
-  coolLightState = coolLaneState.as<String>();
+  lightState["warm"] = warmLaneState;
+  lightState["cool"] = coolLaneState;
 
-  sysStatus["status"] = "lightsOff";
-  systemStatus = sysStatus["status"].as<String>();
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
   return 1;
 }
@@ -241,11 +233,12 @@ int allOn() {
     };
   };
 
-  sysStatus["status"] = "lightsOn";
-  systemStatus = sysStatus["status"].as<String>();
+  lightState["warm"] = warmLaneState;
+  lightState["cool"] = coolLaneState;
 
-  warmLightState = warmLaneState.as<String>();
-  coolLightState = coolLaneState.as<String>();
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
   return 1;
 }
@@ -264,7 +257,7 @@ int bankSet(String command) {
       warm.setChannelPWM(i, y << 4);
       warmLaneState[i] = valInt;
     }
-    warmLightState = warmLaneState.as<String>();
+    lightState["warm"] = warmLaneState;
   } else if(ch == "c") {
     if(valInt > 0) {
       digitalWrite(MC, HIGH);
@@ -274,11 +267,13 @@ int bankSet(String command) {
       cool.setChannelPWM(j, x << 4);
       coolLaneState[j] = valInt;
     }
-    coolLightState = coolLaneState.as<String>();
+    lightState["cool"] = coolLaneState;
   } else {
     return 0;
   }
-
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
   return 1;
 }
 
@@ -294,7 +289,9 @@ int warmSet(String command) {
     warmLaneState[i] = valInt;
   }
   
-  warmLightState = warmLaneState.as<String>();
+  lightState["warm"] = warmLaneState;
+  tmpW = lightState["warm"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
   return 1;
 }
@@ -311,7 +308,9 @@ int coolSet(String command) {
     coolLaneState[i] = valInt;
   }
 
-  coolLightState = coolLaneState.as<String>();
+  lightState["cool"] = coolLaneState;
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
 
   return 1;
 }
@@ -331,7 +330,7 @@ int channel(String command) {
     int y = invert(valInt);
     warm.setChannelPWM(channel, y << 4);
     warmLaneState[channel] = valInt;
-    warmLightState = warmLaneState.as<String>();
+    lightState["warm"] = warmLaneState;
   } else if(color == "c") {
     if(valInt > 0) {
       digitalWrite(MC, HIGH);
@@ -339,9 +338,11 @@ int channel(String command) {
     int y = invert(valInt);
     cool.setChannelPWM(channel, y << 4);
     coolLaneState[channel] = valInt;
-    coolLightState = coolLaneState.as<String>();
+    lightState["cool"] = coolLaneState;
   }
-
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
   return 1;
 }
 
@@ -363,43 +364,43 @@ String getValue(String data, char separator, int index)
   return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-void doEncoderA_W() {
-  if ( rotating_W ) delay (3);
-  if ( digitalRead(encoderPinA_W) != A_set_W ) {
-    A_set_W = !A_set_W;
-    if ( A_set_W && !B_set_W )
-      encoderPos_W += 1;
-    rotating_W = false;
+void doEncoderA_T() {
+  if ( rotating_T ) delay (3);
+  if ( digitalRead(encoderPinA_T) != A_set_T ) {
+    A_set_T = !A_set_T;
+    if ( A_set_T && !B_set_T )
+      encoderPos_T += 1;
+    rotating_T = false;
   }
 }
 
-void doEncoderB_W() {
-  if ( rotating_W ) delay (3);
-  if ( digitalRead(encoderPinB_W) != B_set_W ) {
-    B_set_W = !B_set_W;
-    if ( B_set_W && !A_set_W )
-      encoderPos_W -= 1;
-    rotating_W = false;
+void doEncoderB_T() {
+  if ( rotating_T ) delay (3);
+  if ( digitalRead(encoderPinB_T) != B_set_T ) {
+    B_set_T = !B_set_T;
+    if ( B_set_T && !A_set_T )
+      encoderPos_T -= 1;
+    rotating_T = false;
   }
 }
 
-void doEncoderA_C() {
-  if ( rotating_C ) delay (3);
-  if ( digitalRead(encoderPinA_C) != A_set_C ) {
-    A_set_C = !A_set_C;
-    if ( A_set_C && !B_set_C )
-      encoderPos_C += 1;
-    rotating_C = false;
+void doEncoderA_B() {
+  if ( rotating_B ) delay (3);
+  if ( digitalRead(encoderPinA_B) != A_set_B ) {
+    A_set_B = !A_set_B;
+    if ( A_set_B && !B_set_B )
+      encoderPos_B += 1;
+    rotating_B = false;
   }
 }
 
-void doEncoderB_C() {
-  if ( rotating_C ) delay (3);
-  if ( digitalRead(encoderPinB_C) != B_set_C ) {
-    B_set_C = !B_set_C;
-    if ( B_set_C && !A_set_C )
-      encoderPos_C -= 1;
-    rotating_C = false;
+void doEncoderB_B() {
+  if ( rotating_B ) delay (3);
+  if ( digitalRead(encoderPinB_B) != B_set_B ) {
+    B_set_B = !B_set_B;
+    if ( B_set_B && !A_set_B )
+      encoderPos_B -= 1;
+    rotating_B = false;
   }
 }
 
@@ -438,7 +439,7 @@ int sceneSet(String command) {
       if(test > 0) {
         digitalWrite(MW, HIGH);
       }
-      warmLightState = warmLaneState.as<String>();
+      lightState["warm"] = warmLaneState;
       test = 0;
       for(int j=0; j<14; j++) {
         addrC = addrC + j;
@@ -452,9 +453,11 @@ int sceneSet(String command) {
       if(test > 0) {
         digitalWrite(MC, HIGH);
       }
-      coolLightState = coolLaneState.as<String>();
+      lightState["cool"] = coolLaneState;
     }
-  
+    tmpW = lightState["warm"].as<String>();
+    tmpC = lightState["cool"].as<String>();
+    allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
     return 1;
   } else {
     return 0;
@@ -515,65 +518,47 @@ void updatePCA(uint8_t value, bool adjust, int ch) {
     };
     
     if(ch == 0) {
-      warmLightState = warmLaneState.as<String>();
+      lightState["warm"] = warmLaneState;
+      tmpW = lightState["warm"].as<String>();
     } else if(ch == 1) {
-      coolLightState = coolLaneState.as<String>();
+      lightState["cool"] = coolLaneState;
+      tmpC = lightState["cool"].as<String>();
     }
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
   }
-}
-
-String DisplayAddress(IPAddress address)
-{
- return String(address[0]) + "." + 
-        String(address[1]) + "." + 
-        String(address[2]) + "." + 
-        String(address[3]);
 }
 
 void handleEncoders() {
-  if (lastReportedPos_W != encoderPos_W) {
-    if(lastReportedPos_W < encoderPos_W && (encoderPos_W - lastReportedPos_W) < 100) {
-      int value = (encoderPos_W - lastReportedPos_W);
+  if (lastReportedPos_T != encoderPos_T) {
+    if(lastReportedPos_T < encoderPos_T && (encoderPos_T - lastReportedPos_T) < 100) {
+      int value = (encoderPos_T - lastReportedPos_T);
       updatePCA(value, false, 0);
-    } else if(lastReportedPos_W > encoderPos_W && (lastReportedPos_W - encoderPos_W) < 100) {
-      int value = (lastReportedPos_W - encoderPos_W);
-      updatePCA(value, true, 0);
-    }
-    lastReportedPos_W = encoderPos_W;
-  }
-
-  if (lastReportedPos_C != encoderPos_C) {
-    if(lastReportedPos_C < encoderPos_C && (encoderPos_C - lastReportedPos_C) < 100) {
-      int value = (encoderPos_C - lastReportedPos_C);
-      updatePCA(value, false, 1);
-    } else if(lastReportedPos_C > encoderPos_C && (lastReportedPos_C - encoderPos_C) < 100) {
-      int value = (lastReportedPos_C - encoderPos_C);
       updatePCA(value, true, 1);
+    } else if(lastReportedPos_T > encoderPos_T && (lastReportedPos_T - encoderPos_T) < 100) {
+      int value = (lastReportedPos_T - encoderPos_T);
+      updatePCA(value, true, 0);
+      updatePCA(value, false, 1);
     }
-    lastReportedPos_C = encoderPos_C;
+    lastReportedPos_T = encoderPos_T;
   }
-}
 
-void checkNetwork() {
-  if(Ethernet.link() == 0) {
-    if(IP != "NO LINK" && IP != "NO DHCP") {
-      network["ip"] = "NO LINK";
-      IP = network["ip"].as<String>();
-      serializeJson(network, Serial);
+  if (lastReportedPos_B != encoderPos_B) {
+    if(lastReportedPos_B < encoderPos_B && (encoderPos_B - lastReportedPos_B) < 100) {
+      int value = (encoderPos_B - lastReportedPos_B);
+      updatePCA(value, false, 0);
+      updatePCA(value, false, 1);
+    } else if(lastReportedPos_B > encoderPos_B && (lastReportedPos_B - encoderPos_B) < 100) {
+      int value = (lastReportedPos_B - encoderPos_B);
+      if(warmT > 0) {
+        updatePCA(value, true, 0);
+      } else if(coolT > 0) { 
+        updatePCA(value, true, 1);
+      } else if(coolT == 0 && warmT == 0) {
+        updatePCA(value, true, 0);
+        updatePCA(value, true, 1);
+      };
     }
-  } else {
-    EthernetClient client = server.available();
-    rest.handle(client);
-  }
-  if(IP == "NO LINK") {
-    if(Ethernet.link() == 1) {
-      Ethernet.setHostname("studioLightControl");
-      if (Ethernet.begin(mac) == 0) {
-        network["ip"] = DisplayAddress(Ethernet.localIP());
-        IP = network["ip"].as<String>();
-        serializeJson(network, Serial);
-      }
-    }
+    lastReportedPos_B = encoderPos_B;
   }
 }
 
@@ -584,13 +569,13 @@ void readBtns() {
   if(digitalRead(systemOnBTN)) {
     allOn();
   }
-  if(systemStatus == "lightsOn") {
-    analogWrite(systemOffLED, 255);
-    analogWrite(systemOnLED, 0);
-  } else if(systemStatus == "lightsOff") {
-    analogWrite(systemOffLED, 0);
-    analogWrite(systemOnLED, 255);
-  }
+ if(warmT > 0 || coolT > 0) {
+   analogWrite(systemOffLED, 255);
+   analogWrite(systemOnLED, 0);
+ } else if(warmT == 0 && coolT == 0) {
+   analogWrite(systemOffLED, 0);
+   analogWrite(systemOnLED, 255);
+ }
 }
 
 int invert(int value) {
@@ -601,6 +586,8 @@ int invert(int value) {
 void checkStatus() {
   int checkerW = 0;
   int checkerC = 0;
+  float wAvg = 0;
+  float cAvg = 0;
   for(int i=0; i<14; i++ ) {
     int cw = warmLaneState[i];
     checkerW += cw;
@@ -609,18 +596,49 @@ void checkStatus() {
     int cc = coolLaneState[i];
     checkerC += cc;
   }
-  if(checkerW > 0 || checkerC > 0) {
-    sysStatus["status"] = "lightsOn";
-    systemStatus = sysStatus["status"].as<String>();
-  }
+  // UPDATE GLOBAL VALUES
+  warmT = checkerW;
+  coolT = checkerC;
+
+  // RUN AVERAGES AND CALCULATE TEMP
+  wAvg = checkerW / 14;
+  cAvg = checkerC / 14;
+  if(wAvg > cAvg) {
+    temp = (cAvg / wAvg) * 100;
+    temp = map(temp, 0, 100, 2700, 4600);
+  } else if(cAvg > wAvg) {
+      temp = (wAvg / cAvg) * 100;
+      temp = map(temp, 0, 100, 6500, 4600);
+  } else if(cAvg == 0 && wAvg == 0) {
+      temp = 0;
+  } else if(cAvg == wAvg) {
+      temp = 4600;
+  };
+
+  lightState["temp"] = temp;
+  tmpW = lightState["warm"].as<String>();
+  tmpC = lightState["cool"].as<String>();
+  allLightState = "[" + tmpW + "," + tmpC + "," + temp + "]";
+
   if(checkerW == 0) {
     digitalWrite(MW, LOW); 
   };
   if(checkerC == 0) {
     digitalWrite(MC, LOW);
   };
-  if((checkerW + checkerC) == 0) {
-    sysStatus["status"] = "lightsOff";
-    systemStatus = sysStatus["status"].as<String>();
-  }
 }
+
+void emitStatus() {
+  bool change = false;
+  if(millis() - previousMillis > reportInterval) {
+    previousMillis = millis();
+    if(warmT != prevW || coolT != prevC) {
+      prevW = warmT;
+      prevC = coolT;
+      change = true;
+    };
+    if(change) {
+      serializeJson(lightState, Serial);
+    }
+  };
+};
