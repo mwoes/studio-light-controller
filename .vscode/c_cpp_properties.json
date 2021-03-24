@@ -3,7 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/home/mwoessner/snap/arduino/current/Arduino/libraries/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

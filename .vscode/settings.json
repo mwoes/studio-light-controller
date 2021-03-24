@@ -1,0 +1,5 @@
+{
+    "arduino.commandPath": "/bin/run-arduino.sh",
+    "arduino.path": "/snap/bin/arduino",
+    "C_Cpp.errorSquiggles": "Disabled"
+}
