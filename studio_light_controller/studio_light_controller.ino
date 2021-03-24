@@ -170,6 +170,8 @@ void setup() {
 void loop() {
   handleEncoders();
   rest.handle(Serial);
+  EthernetClient client = server.available();
+  rest.handle(client);
   wdt_reset();
   warm.getChannelPWM(0);
   cool.getChannelPWM(0);
