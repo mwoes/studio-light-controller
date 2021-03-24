@@ -143,6 +143,7 @@ void setup() {
   Ethernet.setHostname("studioLightControl");
   
   Ethernet.begin(mac, ip);
+  server.begin();
 
   for(int i=0; i<14; i++) {
     warmLaneState[i] = 0;
@@ -553,9 +554,11 @@ void handleEncoders() {
       int value = (lastReportedPos_B - encoderPos_B);
       if(warmT > 0) {
         updatePCA(value, true, 0);
-      } else if(coolT > 0) { 
+      }
+      if(coolT > 0) { 
         updatePCA(value, true, 1);
-      } else if(coolT == 0 && warmT == 0) {
+      }
+      if(coolT == 0 && warmT == 0) {
         updatePCA(value, true, 0);
         updatePCA(value, true, 1);
       };
